@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>後臺管理</title>
+    <link rel="stylesheet" href="./bootstrap.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="./bootstrap.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="pb-5">使用者管理</h1>
+                <button class="btn btn-success mb-2" id="create">新增使用者</button>
+                <table id="table" class="table table-hover">
+                    <tr>
+                        <th>編號</th>
+                        <th>姓名</th>
+                        <th>密碼</th>
+                        <th>動作</th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="user_modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class=" d-flex justify-content-between align-tiems-center">
+                        <h3 id="modal_title">新增使用者</h3>
+                        <div onclick="$('#user_modal').modal('hide')" id="close_btn">X</div>
+                    </div>
+                    <form id="form" action="#" class="form">
+                        <div class="card-body">
+                            <div class="alert alert-danger d-none" id="error_message"></div>
+                            <p class="">
+                                <label for="username">使用者名稱</label>
+                                <input type="text" name="" id="username" class="form-control">
+                            </p>
+                            <p class="">
+                                <label for="password">使用者密碼</label>
+                                <input type="text" name="" id="password" class="form-control">
+                            </p>
+                            <p class="">
+                                <input type="submit" name="送出" id="submit" class="btn btn-success">
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    // 定義變數 const、let、var
+    // const 不能更改值
+    // let 區域變數
+    // var 全域變數
+    var modal_status = true; // true代表新增使用者、false代表編輯使用者
+    var user_id;
+    $("#create").click(() => {
+        modal_status = true;
+        $("#username").val("");
+        $("#password").val("");
+        $("#error_message").addClass("d-none");
+        $("#modal_title").text("新增使用者");
+        $("#user_modal").modal("show");
+    })
+    $("#form").submit((event) => {
+        // event
+        event.preventDefault(); // 取消跳頁
+        console.log(event);
+        let data = {
+            username: $("#username").val(),
+            password: $("#password").val(),
+        };
+        console.log(data);
+        let form;
+        if (modal_status) {
+            // 新增使用者
+            form = "create";
+        } else {
+            // 編輯使用者
+            form = "edit";
+            data.id = user_id;
+            console.log(data);
+        }
+        $.post("form.php?do=" + form, data, (response) => {
+            console.log(response);
+            if (response == "true") {
+                getData();
+                $("#user_modal").modal("hide");
+            } else {
+                $("#error_message").text("使用者名稱重複");
+                $("#error_message").removeClass("d-none");
+            }
+        })
+    })
+
+    var user_data = [];
+    function getData() {
+        $.get("form.php?do=users", (res) => {
+            console.log(res);
+            let data = JSON.parse(res);
+            user_data = data;
+            $("#table").html(`
+        <tr>
+            <th>編號</th>
+            <th>姓名</th>
+            <th>密碼</th>
+            <th>動作</th>
+        </tr>`)
+
+            data.forEach(element => {
+                $("#table").append(`
+                <tr>
+                    <td>`+ element["id"] + `</td>
+                    <td>`+ element['username'] + `</td>
+                    <td>`+ element['password'] + `</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-light" onclick="edit(`+ element["id"] + `)">edit</button>
+                            <button class="btn btn-danger" onclick="del(`+ element["id"] + `)">del</button>
+                        </div>    
+                    </td>
+                </tr>      
+            `)
+            });
+        })
+    }
+
+    function edit(id) {
+        user_id = id;
+        console.log(id);
+        for (let i = 0; i < user_data.length; i++) {
+            if (user_data[i]["id"] == id) {
+                // 代表是要編輯的使用者資料
+                $("#username").val(user_data[i]["username"]);
+                $("#password").val(user_data[i]["password"]);
+                $("#modal_title").text("編輯使用者");
+                modal_status = false;
+                $("#user_modal").modal("show");
+            }
+        }
+    }
+
+    function del(id) {
+        $.get("form.php?do=del_user&id=" + id, (res) => {
+            getData();
+        })
+    }
+
+    getData();
+</script>
+
+</html>
